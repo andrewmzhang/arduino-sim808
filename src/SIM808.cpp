@@ -51,7 +51,7 @@ void SIM808::waitForReady()
 	} while (waitResponse(TO_F(TOKEN_AT)) != 0);
 
 	// we got AT, waiting for RDY
-	while (waitResponse(TO_F(TOKEN_RDY)) != 0);
+	//while (waitResponse(TO_F(TOKEN_RDY)) != 0);
 }
 
 bool SIM808::setEcho(SIM808Echo mode)

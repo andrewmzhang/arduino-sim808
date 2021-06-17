@@ -4,7 +4,7 @@
 #include <ArduinoLog.h>
 #include "SIMComAT.Common.h"
 
-#define _SIM808_DEBUG _DEBUG
+#define _SIM808_DEBUG 1
 
 #if _SIM808_DEBUG
 	#define SIM808_PRINT(...) _debug.verbose(__VA_ARGS__)

@@ -60,9 +60,25 @@ int8_t SIMComAT::waitResponse(uint16_t timeout,
 	ATConstStr wantedTokens[4] = { s1, s2, s3, s4 };
 	size_t length;
 
+	Serial.print("[SIMComAT::waitResponse] timeout is: ");
+	Serial.println(timeout);
+
+	Serial.print("[SIMComAT::waitResponse] tokens are: ");
+	Serial.print(s1);
+	Serial.print(" ");
+	Serial.print(s2);
+	Serial.print(" ");
+	Serial.print(s3);
+	Serial.print(" ");
+	Serial.print(s4);
+	Serial.println(" ");
+
 	do {
 		memset(replyBuffer, 0, BUFFER_SIZE);
 		length = readNext(replyBuffer, BUFFER_SIZE, &timeout, '\n');
+
+		Serial.print("[SIMComAT::waitResponse] buffer: ");
+		Serial.println(replyBuffer);
 
 		if(!length) continue; 					//read nothing
 		if(wantedTokens[0] == NULL) return 0;	//looking for a line with any content
@@ -74,7 +90,7 @@ int8_t SIMComAT::waitResponse(uint16_t timeout,
 			}
 		}
 	} while(timeout);
-
+	Serial.println("[SIMComAT::waitResponse] COULD NOT FIND TOKENS");
 	return -1;
 }
 
