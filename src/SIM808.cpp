@@ -50,7 +50,12 @@ void SIM808::waitForReady()
 	// Despite official documentation, we can get an "AT" back without a "RDY" first.
 	} while (waitResponse(TO_F(TOKEN_AT)) != 0);
 
-	// we got AT, waiting for RDY
+	// Its unclear to me why this RDY needs to exist or when its sent. Despite official documentation, on the
+	// DFRobot_SIM808, I don't consistent get this when the Serial pins for the module are default pins (0,1).
+	// However if the Serial pins are changed to (2, 3), note that the board must be detached and power/serial supplied
+	// via jumper lines, I do receive a RDY. I'll need to do more testing. 
+	// Anyways, if you stack the module and use (0,1), default pins, as Serial RDY is not always received and you may hang
+	// on this line. 
 	//while (waitResponse(TO_F(TOKEN_RDY)) != 0);
 }
 

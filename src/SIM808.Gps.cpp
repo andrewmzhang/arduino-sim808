@@ -8,21 +8,15 @@ bool SIM808::powerOnOffGps(bool power)
 	bool currentState;
 	if(getGpsPowerState(&currentState)) {
 		if (currentState == power) {
-			Serial.print("SIM808::[powerOnOffGps] Gps is already this state: ");
 			Serial.println(power);
 			return true;
 		}
 	}
 	
-	Serial.println("SIM808::[powerOnOffGps] Failed to grab gps power state");
-		
-	Serial.println("SIM808::[powerOnOffGps] Attempting to write signal");
 	sendAT(TO_F(TOKEN_GPS_POWER), TO_F(TOKEN_WRITE), (uint8_t)power);
 	if (waitResponse() == 0) {
-		Serial.println("SIM808::[powerOnOffGps] ACK!");
 		return true;
 	} else {
-		Serial.println("SIM808::[powerOnOffGps] NCK!");
 		return false;
 	}
 }
@@ -66,54 +60,34 @@ bool SIM808::getGpsField(const char* response, SIM808GpsField field, float* resu
 
 SIM808GpsStatus SIM808::getGpsStatus(char * response, size_t responseSize, uint8_t minSatellitesForAccurateFix)
 {	
-	Serial.println("[SIM808::getGpsStatus] Entered");
 	SIM808GpsStatus result = SIM808GpsStatus::NoFix;
 
 	sendAT(TO_F(TOKEN_GPS_INFO));
 
 	if(waitResponse(TO_F(TOKEN_GPS_INFO)) != 0) {
-		Serial.println("[SIM808::getGpsStatus] Token failed!");
 		return SIM808GpsStatus::Fail;
 	}
 
+	// Sets the offset from string start to the first CSV value position.
 	uint16_t shift = strlen_P(TOKEN_GPS_INFO) + 2;
 
-	Serial.print("[SIM808::getGpsStatus] Switch Statements. shift: ");
-	Serial.println(shift);
-
-	Serial.print("[SIM808::getGpsStatus] replyBuffer: ");
-	Serial.println(replyBuffer);
-
-	Serial.print("[SIM808::getGpsStatus] switch: ");
-	Serial.println(replyBuffer[shift]);
-
-	if(replyBuffer[shift] == '0') {
-		Serial.println("[SIM808::getGpsStatus] GPS OFF");
+	if (replyBuffer[shift] == '0') { // Scanning for 1st CSV value. 0 indicates off, 1 otherwise.
 		result = SIM808GpsStatus::Off;
-	}
-	if(replyBuffer[shift + 2] == '1') // fix acquired
-	{
+	} else if(replyBuffer[shift + 2] == '1') { // Scanning 2nd CSV value. 1 indicates GPS fix, 0 otherwise.
+		// fix aquired
 		uint16_t satellitesUsed;
 		getGpsField(replyBuffer, SIM808GpsField::GnssUsed, &satellitesUsed);
-		
-		Serial.print("[SIM808::getGpsStatus] replyBuffer: ");
-		Serial.println(replyBuffer);
-
-		Serial.print("[SIM808::getGpsStatus] Satellites used: ");
-		Serial.println(satellitesUsed);
-
-
 
 		result = satellitesUsed > minSatellitesForAccurateFix ?
 			SIM808GpsStatus::AccurateFix :
 			SIM808GpsStatus::Fix;
-
-		
 	}
+	// Regardless of On/OFF, GPS Fix, copy the replyBuffer into the response buffer.
+	// This way the end user can still useful data that does not require GPS Fix, such as 
+	// time or number of sattelites in view, etc. 
 	copyCurrentLine(response, responseSize, shift);
 
-	if(waitResponse() != 0) {
-		Serial.println("[SIM808::getGpsStatus] GPS Status FAILED");
+	if (waitResponse() != 0) {
 		return SIM808GpsStatus::Fail;
 	}
 	return result;
@@ -126,16 +100,13 @@ bool SIM808::getGpsPowerState(bool *state)
 	sendAT(TO_F(TOKEN_GPS_POWER), TO_F(TOKEN_READ));
 
 	if (waitResponse(10000L, TO_F(TOKEN_GPS_POWER)) != 0) {
-		Serial.println("SIM808::[getGpsPowerState] Failed send GPS 1");
 		return false;
 	}
 
 	if (!parseReply(',', 0, &result)) {
-		Serial.println("SIM808::[getGpsPowerState] Failed send GPS 2");
 		return false;
 	} 
 	if (waitResponse()) {
-		Serial.println("SIM808::[getGpsPowerState] Failed send GPS 3");
 		return false;
 	}
 
