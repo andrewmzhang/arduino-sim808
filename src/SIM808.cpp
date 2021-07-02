@@ -33,12 +33,17 @@ void SIM808::init()
 
 void SIM808::reset()
 {
+	// DFRobot shield doesn't have reset. The code is left here for reference.
+	return;
+	
+	/*
 	digitalWrite(_resetPin, HIGH);
 	delay(10);
 	digitalWrite(_resetPin, LOW);
 	delay(200);
 
 	digitalWrite(_resetPin, HIGH);
+	*/
 }
 
 void SIM808::waitForReady()
@@ -48,9 +53,17 @@ void SIM808::waitForReady()
 		SIM808_PRINT_SIMPLE_P("Waiting for echo...");
 		sendAT(S_F(""));
 	// Despite official documentation, we can get an "AT" back without a "RDY" first.
-	} while (waitResponse(TO_F(TOKEN_AT)) != 0);
+	// NOTE: I can't find the documentation for the AT command. In my experience it returns AT after boot
+	// and then it tends to return OK. 
+	// The thing is if the SIM808 is already powered on (and the arduino undergoes a reset), 
+	// This line may hang as it expects AT but we are past boot time, thus I believe its just better
+	// to spam AT until we get OK (skipping the AT response and the RDY response). Since in the DFRobot shield
+	// we don't have a way to "reset", aside from power cycling the D12 pin, I think it works better for the
+	// general case.
+	//} while (waitResponse(TO_F(TOKEN_AT)) != 0);
+	} while (waitResponse(TO_F(TOKEN_OK)) != 0);
 
-	// Its unclear to me why this RDY needs to exist or when its sent. Despite official documentation, on the
+	// NOTE: Its unclear to me why this RDY needs to exist or when its sent. Despite official documentation, on the
 	// DFRobot_SIM808, I don't consistent get this when the Serial pins for the module are default pins (0,1).
 	// However if the Serial pins are changed to (2, 3), note that the board must be detached and power/serial supplied
 	// via jumper lines, I do receive a RDY. I'll need to do more testing. 

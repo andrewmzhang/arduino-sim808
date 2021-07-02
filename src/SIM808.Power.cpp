@@ -18,15 +18,37 @@ bool SIM808::powerOnOff(bool power)
 	if (_pwrKeyPin == SIM808_UNAVAILABLE_PIN) return false;
 
 	bool currentlyPowered = powered();
-	if (currentlyPowered == power) return false;
 	
-	SIM808_PRINT_P("powerOnOff: %t", power);
+	SIM808_PRINT_P("powerOnOff: %t -> %t \n", power, currentlyPowered);
+	
+	// NOTE: This is an interesting design choice... This forces the user to check before they call powerOnOff
+	// if the power state is already what they want. This would mean 2 consequtive calls to powered()
+	// AND the behavior is different than in the last return statment at the bottom; the user
+	// cannot tell if the power failed to set and timed-out or if it was already in the correct powerstate.
+	// Thus I have changed this line to return true if already in the proper powerstate
+	// if (currentlyPowered == power) return false;  // ORIGINAL CODE
+	if (currentlyPowered == power) return true;
 
+	// Make sure the _pwrKeyPin is set low. Wait 250ms to ensure SIM808 registers.
+	// 250ms because I assume it will work to make the chip see the LOW.
 	digitalWrite(_pwrKeyPin, LOW);
-	delay(2000);
-	digitalWrite(_pwrKeyPin, HIGH);
+	delay(250);
 
-	uint16_t timeout = 2000;
+	// For poweron, we need to hold _pwrKeyPin HIGH for 1s
+	// we hold the pin high so if the module shuts off it'll turn back on.
+	// For poweroff, we need to hold _pwrKeyPin HIGH for 3s
+	if (power) {
+		digitalWrite(_pwrKeyPin, HIGH);
+		delay(1250);
+		//digitalWrite(_pwrKeyPin, LOW);
+	} else {
+		digitalWrite(_pwrKeyPin, HIGH);
+		delay(3250);
+		digitalWrite(_pwrKeyPin, LOW);
+	}
+	
+	// Wait 2s for change. 
+	int16_t timeout = 2000;  // BUG: I need to make a PR for this. Straight bug.
 	do {
 		delay(150);
 		timeout -= 150;

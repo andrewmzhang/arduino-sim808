@@ -51,20 +51,25 @@ bool SIM808::getGpsField(const char* response, SIM808GpsField field, float* resu
 
 SIM808GpsStatus SIM808::getGpsStatus(char * response, size_t responseSize, uint8_t minSatellitesForAccurateFix)
 {	
-	SIM808GpsStatus result = SIM808GpsStatus::NoFix;
+	SIM808GpsStatus result;
 
+	// Poll GPS for INF string. Return Fail if no response. 
 	sendAT(TO_F(TOKEN_GPS_INFO));
-
 	if(waitResponse(TO_F(TOKEN_GPS_INFO)) != 0)
 		return SIM808GpsStatus::Fail;
+
 
 	// Sets the offset from string start to the first CSV value position.
 	uint16_t shift = strlen_P(TOKEN_GPS_INFO) + 2;
 
 	if (replyBuffer[shift] == '0') { // Scanning for 1st CSV value. 0 indicates off, 1 otherwise.
+		// GPS is off. 
 		result = SIM808GpsStatus::Off;
-	} else if(replyBuffer[shift + 2] == '1') { // Scanning 2nd CSV value. 1 indicates GPS fix, 0 otherwise.
-		// fix aquired
+	} else if (replyBuffer[shift + 2] == '0') {
+		// GPS is on. No fix.
+		result = SIM808GpsStatus::NoFix;
+	} else { // Scanning 2nd CSV value. 1 indicates GPS fix, 0 otherwise.
+		// GPS is on, fix acquired
 		uint16_t satellitesUsed;
 		getGpsField(replyBuffer, SIM808GpsField::GnssUsed, &satellitesUsed);
 
@@ -72,15 +77,13 @@ SIM808GpsStatus SIM808::getGpsStatus(char * response, size_t responseSize, uint8
 			SIM808GpsStatus::AccurateFix :
 			SIM808GpsStatus::Fix;
 	}
+	
 	// Regardless of On/OFF, GPS Fix, copy the replyBuffer into the response buffer.
 	// This way the end user can still useful data that does not require GPS Fix, such as 
 	// time or number of sattelites in view, etc. 
-	copyCurrentLine(response, responseSize, shift);
+	copyCurrentLine(response, responseSize, shift); 
 
-		copyCurrentLine(response, responseSize, shift);
-	}
-
-	if(waitResponse() != 0) return SIM808GpsStatus::Fail;
+	if(waitResponse() != 0) return SIM808GpsStatus::Fail; // NOTE: not sure what this line does... 
 
 	return result;
 }
